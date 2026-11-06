@@ -12,20 +12,16 @@ export default async function handler(req, res) {
             }
         });
         
-        // Baca respon sebagai teks dulu
         const textData = await response.text();
 
-        // Kalau Supabase ngasih error
         if (!response.ok) {
-            return res.status(response.status).json({ error: 'Supabase menolak akses: ' + textData });
+            return res.status(response.status).json({ error: 'Supabase Error: ' + textData });
         }
 
-        // Kalau sukses, parsing teks ke JSON
         const jsonData = JSON.parse(textData);
         res.status(200).json(jsonData);
 
     } catch (error) {
-        // Kalau ada crash di server, balikin format JSON error
         res.status(500).json({ error: 'Server Error: ' + error.message });
     }
-}
+                }
