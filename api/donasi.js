@@ -4,6 +4,7 @@ export default async function handler(req, res) {
     const { order_id, amount, donor_name, donor_email, message } = req.body;
 
     try {
+        // 1. Tembak API Cashi
         const cashiRes = await fetch('https://cashi.id/api/create-order', {
             method: 'POST',
             headers: {
@@ -16,14 +17,29 @@ export default async function handler(req, res) {
             })
         });
 
-        const cashiData = await cashiRes.json();
+        // Ambil balasan asli dari Cashi (berupa teks dulu)
+        const cashiText = await cashiRes.text();
+        let cashiData;
         
+        try {
+            cashiData = JSON.parse(cashiText);
+        } catch (e) {
+            return res.status(500).json({ message: 'Cashi balas pakai format aneh: ' + cashiText });
+        }
+        
+        // Kalau Cashi bilang gagal (misal API Key salah)
         if (!cashiData.success) {
-            return res.status(400).json({ message: 'Cashi Error: ' + JSON.stringify(cashiData) });
+            return res.status(400).json({ message: 'Cashi Error: ' + cashiText });
+        }
+
+        // Kalau Cashi sukses tapi gak ngasih qrLink
+        if (!cashiData.qrLink) {
+            return res.status(400).json({ message: 'Cashi sukses tapi gak ada QR Link: ' + cashiText });
         }
         
         const qrCodeUrl = cashiData.qrLink; 
 
+        // 2. Simpan ke Supabase
         const dbRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/donations`, {
             method: 'POST',
             headers: {
@@ -40,6 +56,11 @@ export default async function handler(req, res) {
                 status: 'PENDING' 
             })
         });
+
+        if (!dbRes.ok) {
+            const dbErr = await dbRes.text();
+            return res.status(500).json({ message: 'Gagal simpan ke Supabase: ' + dbErr });
+        }
 
         res.status(200).json({ success: true, qr_code_url: qrCodeUrl });
 
