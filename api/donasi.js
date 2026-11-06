@@ -22,9 +22,8 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Cashi Error: ' + JSON.stringify(cashiData) });
         }
         
-        // ⚠️ CATATAN PENTING: Berdasarkan screenshot sebelumnya, Cashi mengirim 'qrUrl' bukan 'qrLink'.
-        // Jika QRIS tidak muncul lagi, ganti 'qrLink' di bawah ini menjadi 'qrUrl'.
-        const qrCodeUrl = cashiData.qrLink; 
+        // 👇 INI UDAH GUA GANTI JADI qrUrl (BUKAN qrLink) 👇
+        const qrCodeUrl = cashiData.qrUrl; 
 
         const dbRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/donations`, {
             method: 'POST',
@@ -43,7 +42,6 @@ export default async function handler(req, res) {
             })
         });
 
-        // 👇 DI SINI SAYA TAMBAHKAN order_id AGAR BISA DIBACA FRONTEND 👇
         res.status(200).json({ 
             success: true, 
             qr_code_url: qrCodeUrl,
