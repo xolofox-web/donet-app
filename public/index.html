@@ -1,0 +1,71 @@
+<!--
+============================================================
+CARA DEPLOY KE VERCEL (LANGSUNG DARI FILE INI):
+1. Upload ke GitHub
+2. Import di Vercel
+3. Set Environment Variables
+4. Deploy: Klik Deploy. Selesai!
+5. Webhook URL: https://nama-project-lu.vercel.app/api/webhook
+============================================================
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dukung Kreator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4 font-sans">
+    <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
+        <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">Dukung Kreator</h1>
+        <form id="form-donasi" class="space-y-4">
+            <div>
+                <label class="text-sm font-medium text-gray-700">Nominal (Rp)</label>
+                <input type="number" id="amount" required class="w-full mt-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 10000">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="name" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nama">
+                <input type="email" id="email" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email">
+            </div>
+            <textarea id="message" rows="2" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pesan (Opsional)"></textarea>
+            <div class="flex items-start gap-2">
+                <input type="checkbox" required class="mt-1 w-4 h-4 text-blue-600 rounded">
+                <span class="text-xs text-gray-500">Saya paham dukungan ini sukarela.</span>
+            </div>
+            
+            <!-- TAMBAHAN UI TOTAL (Sesuai Screenshot) -->
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mt-2">
+                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Jumlah Dukungan:</span>
+                    <span id="total-dukungan">Rp 0</span>
+                </div>
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Biaya Layanan (QRIS):</span>
+                    <span>Rp 0</span>
+                </div>
+                <div class="border-t border-gray-200 pt-2 flex justify-between font-bold text-gray-800">
+                    <span>Total:</span>
+                    <span id="total-akhir">Rp 0</span>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition">Dukung via QRIS</button>
+        </form>
+        <p class="text-center text-sm text-gray-400 mt-4 cursor-pointer hover:text-blue-600" onclick="window.location.href='/login.html'">Login Admin</p>
+    </div>
+
+    <!-- SCRIPT TAMBAHAN UNTUK MENGHITUNG TOTAL SECARA OTOMATIS -->
+    <script>
+        document.getElementById('amount').addEventListener('input', function(e) {
+            const val = parseInt(e.target.value) || 0;
+            document.getElementById('total-dukungan').innerText = 'Rp ' + val.toLocaleString('id-ID');
+            document.getElementById('total-akhir').innerText = 'Rp ' + val.toLocaleString('id-ID');
+        });
+    </script>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/donasi.js"></script>
+</body>
+</html>
