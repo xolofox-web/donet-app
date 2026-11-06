@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dukung Kreator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4 font-sans">
+    <div class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
+        <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">Dukung Kreator</h1>
+        
+        <form id="form-donasi" class="space-y-4">
+            <div>
+                <label class="text-sm font-medium text-gray-700">Nominal (Rp)</label>
+                <input type="number" id="amount" required class="w-full mt-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 10000">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="name" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nama">
+                <input type="email" id="email" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email">
+            </div>
+            <textarea id="message" rows="2" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pesan (Opsional)"></textarea>
+            
+            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition">Dukung via QRIS</button>
+        </form>
+        <p class="text-center text-sm text-gray-400 mt-4 cursor-pointer hover:text-blue-600" onclick="window.location.href='/login.html'">Login Admin</p>
+    </div>
+
+    <!-- SCRIPT LANGSUNG DI DALAM HTML BIAR PASTI KEBACA -->
+    <script>
+        document.getElementById('form-donasi').onsubmit = async function(e) {
+            e.preventDefault(); // Nahan refresh
+            alert('Tombol kepencet! (Halaman berhasil ditahan biar gak refresh)');
+            
+            const btn = e.target.querySelector('button');
+            btn.innerText = 'Memproses...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/donasi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        order_id: 'DON-' + Date.now(),
+                        amount: parseInt(document.getElementById('amount').value),
+                        donor_name: document.getElementById('name').value,
+                        donor_email: document.getElementById('email').value,
+                        message: document.getElementById('message').value
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.qr_code_url) { 
+                    document.body.innerHTML = `
+                        <div class="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+                            <div class="bg-white p-8 rounded-3xl shadow-xl text-center">
+                                <h2 class="text-xl font-bold mb-4">Scan QRIS</h2>
+                                <img src="${data.qr_code_url}" alt="QRIS" class="w-64 h-64 mx-auto mb-4 border p-2 rounded-xl">
+                                <button onclick="window.location.reload()" class="bg-gray-100 text-gray-700 px-6 py-2 rounded-xl">Kembali</button>
+                            </div>
+                        </div>
+                    `;
+                } else { 
+                    alert('API Error: ' + (data.message || 'Gagal dari server Vercel'));
+                    btn.innerText = 'Dukung via QRIS'; 
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Error Jaringan: ' + err.message);
+                btn.innerText = 'Dukung via QRIS';
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>
