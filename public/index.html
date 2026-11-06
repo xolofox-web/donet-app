@@ -62,7 +62,8 @@
                         </div>
                     `;
                 } else { 
-                    alert('API Error: ' + (data.message || 'Gagal dari server Vercel'));
+                    // Ini bakal nampilin pesan error asli dari Cashi
+                    alert('Pesan Sistem: ' + JSON.stringify(data));
                     btn.innerText = 'Dukung via QRIS'; 
                     btn.disabled = false;
                 }
