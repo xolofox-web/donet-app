@@ -1,0 +1,22 @@
+document.getElementById('form-donasi').onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.innerText = 'Memproses...'; btn.disabled = true;
+
+    const res = await fetch('/api/donasi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            order_id: 'DON-' + Date.now(),
+            amount: parseInt(document.getElementById('amount').value),
+            donor_name: document.getElementById('name').value,
+            donor_email: document.getElementById('email').value,
+            message: document.getElementById('message').value
+        })
+    });
+
+    if (res.ok) { alert('Berhasil! Lanjut ke QRIS.'); e.target.reset(); }
+    else { alert('Gagal mengirim donasi.'); }
+    
+    btn.innerText = 'Dukung via QRIS'; btn.disabled = false;
+};
