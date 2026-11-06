@@ -1,24 +1,47 @@
-document.getElementById('form-login').onsubmit = async (e) => {
-    e.preventDefault();
-    const err = document.getElementById('login-err');
-    err.classList.add('hidden');
+document.addEventListener("DOMContentLoaded", function() {
+    const loginForm = document.getElementById('form-login');
     
-    const email = document.getElementById('login-email').value;
-    
-    // 1. Login lewat API Vercel
-    const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: document.getElementById('login-pass').value })
-    });
-    const data = await res.json();
-    
-    if (data.error) { 
-        err.textContent = 'Email/Password salah'; err.classList.remove('hidden'); return; 
+    if (loginForm) {
+        loginForm.onsubmit = async function(e) {
+            e.preventDefault(); // Nahan biar ga refresh
+            
+            const btn = loginForm.querySelector('button');
+            const err = document.getElementById('login-err');
+            
+            btn.innerText = 'Memproses...';
+            btn.disabled = true;
+            err.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('login-email').value,
+                        password: document.getElementById('login-pass').value
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    err.innerText = data.error || 'Email atau password salah.';
+                    err.classList.remove('hidden');
+                    btn.innerText = 'Masuk ke Dashboard';
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Simpan token dan pindah halaman
+                localStorage.setItem('admin_token', data.access_token);
+                window.location.href = '/dashboard.html';
+
+            } catch (error) {
+                err.innerText = 'Koneksi error: ' + error.message;
+                err.classList.remove('hidden');
+                btn.innerText = 'Masuk ke Dashboard';
+                btn.disabled = false;
+            }
+        };
     }
-    
-    // 2. Cek Whitelist
-    const wl = await fetch(`${process.env.SUPABASE_URL}/rest/v1/authorized_users?email=eq.${email}`, { // ERROR: process.env gak ada di browser!
-        headers: { 'apikey': '...', 'Authorization': `Bearer ${data.access_token}` }
-    });
-    // Kita harus bikin endpoint API buat cek whitelist juga kalau mau aman.
+});
