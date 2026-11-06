@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dukung Kreator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>.hidden{display:none!important}</style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <script>
+        const SUPABASE_URL = 'https://xxxxxx.supabase.co'; // GANTI
+        const SUPABASE_KEY = 'eyJhbG...'; // GANTI ANON KEY LU
+    </script>
+
+    <!-- HALAMAN 1: FORM DONASI -->
+    <div id="page-donasi" class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
+        <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">Dukung Kreator</h1>
+        <form id="form-donasi" class="space-y-4">
+            <div>
+                <label class="text-sm font-medium text-gray-700">Nominal (Rp)</label>
+                <input type="number" id="amount" required class="w-full mt-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 10000">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="name" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nama">
+                <input type="email" id="email" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email">
+            </div>
+            <textarea id="message" rows="2" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pesan (Opsional)"></textarea>
+            <div class="flex items-start gap-2">
+                <input type="checkbox" required class="mt-1 w-4 h-4 text-blue-600 rounded">
+                <span class="text-xs text-gray-500">Saya paham dukungan ini sukarela.</span>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition">Dukung via QRIS</button>
+        </form>
+        <p class="text-center text-sm text-gray-400 mt-4 cursor-pointer hover:text-blue-600" onclick="showPage('page-login')">Login Admin</p>
+    </div>
+
+    <!-- HALAMAN 2: LOGIN ADMIN -->
+    <div id="page-login" class="hidden bg-white p-8 rounded-3xl shadow-xl border border-gray-100 w-full max-w-md">
+        <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">Admin Login</h1>
+        <p id="login-err" class="text-red-500 text-sm text-center mb-2 hidden"></p>
+        <form id="form-login" class="space-y-4">
+            <input type="email" id="login-email" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email">
+            <input type="password" id="login-pass" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Password">
+            <button type="submit" class="w-full bg-gray-900 text-white font-semibold py-3 rounded-xl hover:bg-gray-800 transition">Masuk</button>
+        </form>
+    </div>
+
+    <!-- HALAMAN 3: DASHBOARD ADMIN -->
+    <div id="page-dash" class="hidden w-full max-w-4xl">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Dashboard Admin</h1>
+            <button onclick="logout()" class="text-sm text-red-500 font-semibold">Logout</button>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <form id="form-add-user" class="flex gap-2">
+                <input type="email" id="new-email" required class="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Tambah email yang boleh login...">
+                <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-blue-700">Tambah</button>
+            </form>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-4 text-sm font-medium text-gray-500">Donatur</th>
+                        <th class="px-6 py-4 text-sm font-medium text-gray-500">Nominal</th>
+                        <th class="px-6 py-4 text-sm font-medium text-gray-500">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="t-body" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- LOGIKA JS (TANPA LIBRARY) -->
+    <script>
+        let token = null;
+
+        function showPage(id) {
+            document.querySelectorAll('body > div').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // --- KIRIM DONASI ---
+        document.getElementById('form-donasi').onsubmit = async (e) => {
+            e.preventDefault();
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/donations`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    order_id: 'DON-' + Date.now(),
+                    amount: parseInt(document.getElementById('amount').value),
+                    donor_name: document.getElementById('name').value,
+                    donor_email: document.getElementById('email').value,
+                    message: document.getElementById('message').value
+                })
+            });
+            if (res.ok) { alert('Berhasil! Lanjut ke QRIS (Integrasikan API PG lu).'); e.target.reset(); }
+            else { alert('Gagal mengirim donasi.'); }
+        };
+
+        // --- LOGIN ADMIN ---
+        document.getElementById('form-login').onsubmit = async (e) => {
+            e.preventDefault();
+            const err = document.getElementById('login-err');
+            err.classList.add('hidden');
+            const email = document.getElementById('login-email').value;
+            
+            const auth = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password: document.getElementById('login-pass').value })
+            });
+            const data = await auth.json();
+            
+            if (!auth.ok) { err.textContent = 'Email/Password salah'; err.classList.remove('hidden'); return; }
+            token = data.access_token;
+
+            const cek = await fetch(`${SUPABASE_URL}/rest/v1/authorized_users?email=eq.${email}`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+            });
+            const cekData = await cek.json();
+
+            if (cekData.length === 0) { err.textContent = 'Email lu kagak ada di whitelist!'; err.classList.remove('hidden'); token = null; return; }
+
+            showPage('page-dash');
+            loadDash();
+        };
+
+        // --- DASHBOARD ---
+        async function loadDash() {
+            if (!token) return;
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/donations?select=*&order=created_at.desc`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const tbody = document.getElementById('t-body');
+            tbody.innerHTML = data.length ? '' : '<tr><td colspan="3" class="text-center py-4 text-gray-500">Belum ada donasi</td></tr>';
+            
+            data.forEach(d => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="px-6 py-4"><p class="font-medium">${d.donor_name}</p><p class="text-xs text-gray-500">${d.donor_email}</p></td>
+                        <td class="px-6 py-4 font-semibold">Rp ${d.amount.toLocaleString('id-ID')}</td>
+                        <td class="px-6 py-4"><span class="px-3 py-1 text-xs font-semibold rounded-full ${d.status === 'SETTLED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${d.status}</span></td>
+                    </tr>`;
+            });
+        }
+
+        // --- TAMBAH USER WHITELIST ---
+        document.getElementById('form-add-user').onsubmit = async (e) => {
+            e.preventDefault();
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/authorized_users`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: document.getElementById('new-email').value })
+            });
+            if (res.ok) { alert('Email berhasil ditambahkan!'); e.target.reset(); }
+            else { alert('Gagal nambah email (mungkin sudah ada).'); }
+        };
+
+        function logout() { token = null; showPage('page-login'); }
+    </script>
+</body>
+      </html>
