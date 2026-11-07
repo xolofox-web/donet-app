@@ -55,11 +55,11 @@
     <!-- LOGIKA JS -->
     <script>
         const token = localStorage.getItem('admin_token');
-        if (!token) window.location.href = '/login.html';
+        if (!token) window.location.href = '/login';
 
         document.getElementById('btn-logout').onclick = () => {
             localStorage.removeItem('admin_token');
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         };
 
         // --- FUNGSI LOAD DATA DONASI ---
