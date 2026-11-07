@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     const { email, password } = req.body;
     
     try {
-        // 1. Cek Login ke Supabase Auth
+        // Tembak ke Supabase Auth
         const authRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
             method: 'POST',
             headers: { 
@@ -16,12 +16,12 @@ export default async function handler(req, res) {
         
         const authData = await authRes.json();
         
-        // Kalau Supabase nolak
-        if (!authRes.ok || authData.error) {
-            return res.status(401).json({ error: 'Email atau password salah' });
+        // KALAU GAGAL, TAMPILIN ERROR ASLI DARI SUPABASE
+        if (!authRes.ok) {
+            return res.status(401).json({ error: authData.error_description || authData.msg || JSON.stringify(authData) });
         }
 
-        // 2. Cek Whitelist (Cuma email tertentu yang bisa masuk)
+        // Cek whitelist
         const wlRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/authorized_users?email=eq.${email}`, {
             headers: { 
                 'apikey': process.env.SUPABASE_ANON_KEY, 
@@ -33,11 +33,6 @@ export default async function handler(req, res) {
         
         if (wlData.length === 0) {
             return res.status(403).json({ error: 'Email Anda tidak memiliki akses admin.' });
-        }
-
-        // 3. Pastikan token ada, baru kirim ke frontend
-        if (!authData.access_token) {
-            return res.status(500).json({ error: 'Gagal mendapatkan token dari Supabase.' });
         }
 
         res.status(200).json({ access_token: authData.access_token });
