@@ -1,8 +1,17 @@
 export default async function handler(req, res) {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ error: 'Token tidak ditemukan. Silakan login ulang.' });
+        const authHeader = req.headers.authorization;
+        
+        // Cek apakah header ada
+        if (!authHeader) {
+            return res.status(401).json({ error: 'Header Authorization hilang. Silakan login ulang.' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        
+        // Cek apakah token beneran ada isinya (bukan string "undefined" atau "null")
+        if (!token || token === 'undefined' || token === 'null' || token.length < 20) {
+            return res.status(401).json({ error: 'Token tidak valid. Silakan login ulang.' });
         }
         
         const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/donations?select=*&order=created_at.desc`, {
