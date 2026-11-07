@@ -71,7 +71,7 @@
                 // Kalau sukses
                 alert('Login Berhasil! Mengalihkan ke dashboard...');
                 localStorage.setItem('admin_token', data.access_token);
-                window.location.href = '/dashboard.html';
+                window.location.href = '/dashboard';
 
             } catch (error) {
                 alert('Error Jaringan: ' + error.message);
