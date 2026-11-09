@@ -31,7 +31,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 from: 'Sistem Donasi <onboarding@resend.dev>', // Bisa diganti jika sudah punya domain
-                to: 'ayubifirmansyah5@gmail.com',
+                to: 'xolofoxoficial@gmail.com',
                 subject: 'Sesi Live Chat Baru Dibuka!',
                 html: `
                     <div style="font-family: sans-serif; padding: 20px;">
