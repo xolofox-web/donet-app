@@ -79,6 +79,19 @@
 
         .copy-id-btn:active { transform: scale(0.95); }
         .load-more-hidden { display: none !important; }
+
+        /* [FITUR BARU] Floating Bulk Actions Bar */
+        #bulk-action-bar {
+            transform: translateX(-50%) translateY(100px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #bulk-action-bar.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 min-h-screen p-4 md:p-8 relative transition-colors duration-300">
@@ -236,7 +249,13 @@
                     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                     Riwayat Donasi
                 </h2>
-                <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                <div class="flex flex-wrap gap-2 w-full md:w-auto items-center">
+                    <!-- [FITUR BARU] Select All Checkbox -->
+                    <label class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                        <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Pilih Semua</span>
+                    </label>
+
                     <input type="text" id="search-input" class="flex-1 md:w-40 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 dark:text-white" placeholder="Cari Nama / ID...">
                     
                     <select id="filter-date" class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 dark:text-white">
@@ -252,6 +271,13 @@
                         <option value="PENDING">Pending</option>
                         <option value="FAILED">Gagal</option>
                     </select>
+                    
+                    <!-- [FITUR BARU] Auto Cancel Button -->
+                    <button onclick="triggerAutoCancel()" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-colors" title="Batalkan otomatis transaksi PENDING > 15 menit">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Auto-Cancel
+                    </button>
+
                     <button id="btn-export" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         Export
@@ -274,6 +300,27 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- [FITUR BARU] FLOATING BULK ACTIONS BAR     -->
+    <!-- ========================================== -->
+    <div id="bulk-action-bar" class="fixed bottom-6 left-1/2 z-[100] bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-700">
+        <span id="bulk-count" class="text-sm font-bold whitespace-nowrap">0 Dipilih</span>
+        <div class="w-px h-6 bg-slate-600"></div>
+        <div class="flex gap-2">
+            <button onclick="executeBulkAction('settle')" class="bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                Tandai Lunas
+            </button>
+            <button onclick="executeBulkAction('delete')" class="bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Hapus
+            </button>
+        </div>
+        <button onclick="clearSelection()" class="text-slate-400 hover:text-white transition-colors ml-1">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
     </div>
 
     <!-- ========================================== -->
@@ -468,6 +515,7 @@
         let notifiedOnce = false;
         let currentDetailOrderId = null;
         let orderIdToSettle = null; // Untuk Modal Konfirmasi
+        let selectedOrders = new Set(); // [FITUR BARU] Untuk Bulk Actions
 
         // --- LOAD DATA DONASI ---
         async function loadDash(isBackground = false) {
@@ -529,7 +577,7 @@
             });
         }
 
-        // --- RENDER LIST (UPDATED: Pagination + Modal click + Preview Message) ---
+        // --- RENDER LIST (UPDATED: Pagination + Modal click + Preview Message + Checkbox) ---
         function renderList() {
             const container = document.getElementById('donation-list');
             const btnLoadMore = document.getElementById('btn-load-more');
@@ -550,6 +598,9 @@
                 let badgeClass = isSettled ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (isFailed ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200');
                 let dotClass = isSettled ? 'bg-emerald-500' : (isFailed ? 'bg-red-500' : 'bg-amber-500');
                 const date = new Date(d.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                
+                // [FITUR BARU] Cek apakah item ini sedang dicentang
+                const isChecked = selectedOrders.has(d.order_id);
 
                 let actionButtons = '';
                 if (!isSettled) {
@@ -558,9 +609,13 @@
                 actionButtons += `<button onclick="event.stopPropagation(); deleteDonation('${d.order_id}')" class="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded hover:bg-red-100 transition-colors ml-2">Hapus</button>`;
 
                 container.innerHTML += `
-                    <div onclick="openDetailModal('${d.order_id}')" class="card-animate glass-panel p-5 rounded-[1.5rem] border border-white dark:border-slate-700 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all" style="animation-delay: ${(index % PER_PAGE) * 0.05}s">
+                    <div onclick="openDetailModal('${d.order_id}')" class="card-animate glass-panel p-5 rounded-[1.5rem] border ${isChecked ? 'border-blue-500 ring-1 ring-blue-500' : 'border-white dark:border-slate-700'} shadow-sm cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all" style="animation-delay: ${(index % PER_PAGE) * 0.05}s">
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex items-center gap-3">
+                                <!-- [FITUR BARU] Checkbox Bulk Action -->
+                                <div class="flex items-center justify-center h-full pt-1" onclick="event.stopPropagation()">
+                                    <input type="checkbox" value="${d.order_id}" ${isChecked ? 'checked' : ''} onchange="toggleCheckbox('${d.order_id}', this)" class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                                </div>
                                 <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-lg">
                                     ${d.donor_name.charAt(0).toUpperCase()}
                                 </div>
@@ -597,6 +652,16 @@
             } else {
                 btnLoadMore.classList.add('load-more-hidden');
             }
+            
+            // [FITUR BARU] Sinkronisasi status Select All Checkbox
+            const visibleCheckboxes = document.querySelectorAll('#donation-list input[type="checkbox"]');
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            if (selectAllCheckbox && visibleCheckboxes.length > 0) {
+                const allChecked = Array.from(visibleCheckboxes).every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+            } else if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            }
         }
 
         document.getElementById('search-input').addEventListener('input', renderList);
@@ -613,6 +678,106 @@
             currentPage++;
             renderList();
         }
+
+        // ==========================================
+        // [FITUR BARU] LOGIKA BULK ACTIONS
+        // ==========================================
+        window.toggleSelectAll = function(source) {
+            const checkboxes = document.querySelectorAll('#donation-list input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = source.checked;
+                if (source.checked) {
+                    selectedOrders.add(cb.value);
+                } else {
+                    selectedOrders.delete(cb.value);
+                }
+            });
+            updateBulkBar();
+            renderList(); // Re-render to apply visual border
+        }
+
+        window.toggleCheckbox = function(orderId, checkbox) {
+            if (checkbox.checked) {
+                selectedOrders.add(orderId);
+            } else {
+                selectedOrders.delete(orderId);
+            }
+            updateBulkBar();
+            renderList(); // Re-render to apply visual border
+        }
+
+        window.updateBulkBar = function() {
+            const bar = document.getElementById('bulk-action-bar');
+            const countText = document.getElementById('bulk-count');
+            const count = selectedOrders.size;
+
+            if (count > 0) {
+                countText.innerText = `${count} Transaksi Dipilih`;
+                bar.classList.add('show');
+            } else {
+                bar.classList.remove('show');
+            }
+        }
+
+        window.clearSelection = function() {
+            selectedOrders.clear();
+            updateBulkBar();
+            renderList();
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        }
+
+        window.executeBulkAction = async function(action) {
+            const orderIds = Array.from(selectedOrders);
+            if (orderIds.length === 0) return;
+            
+            const confirmMsg = action === 'settle' ? `Tandai ${orderIds.length} transaksi ini sebagai LUNAS?` : `Hapus permanen ${orderIds.length} transaksi ini?`;
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const res = await fetch('/api/admin?action=bulk-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ order_ids: orderIds, do: action })
+                });
+                
+                if (res.ok) { 
+                    showToast(`Berhasil memproses ${orderIds.length} transaksi!`, 'success'); 
+                    clearSelection();
+                    loadDash(); 
+                } else { 
+                    const err = await res.json();
+                    showToast('Gagal: ' + (err.error || 'Kesalahan sistem'), 'error'); 
+                }
+            } catch (e) { 
+                showToast('Error Jaringan: ' + e.message, 'error'); 
+            }
+        }
+
+        // ==========================================
+        // [FITUR BARU] AUTO-CANCEL PENDING
+        // ==========================================
+        window.triggerAutoCancel = async function() {
+            if (!confirm('Batalkan semua transaksi PENDING yang sudah berumur lebih dari 15 menit?')) return;
+            try {
+                // Memanggil endpoint auto-cancel
+                const res = await fetch('/api/auto-cancel');
+                if (res.ok) {
+                    showToast('Transaksi pending berhasil dibersihkan!', 'success');
+                    loadDash();
+                } else {
+                    throw new Error('Gagal mengeksekusi auto-cancel');
+                }
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        };
+
+        // Panggil Auto-Cancel secara diam-diam di background setiap kali dashboard dibuka
+        setTimeout(() => {
+            fetch('/api/auto-cancel').catch(() => {});
+        }, 2000);
+
 
         // ==========================================
         // [FITUR BARU] LOGIKA MODAL KONFIRMASI SMOOTH
