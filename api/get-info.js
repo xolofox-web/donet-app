@@ -4,8 +4,6 @@ export default async function handler(req, res) {
 
     // =======================================================
     // [TAMBAHAN BARU] MATIKAN CACHE VERCEL
-    // Agar saat frontend polling tiap 2 detik, data saldo 
-    // benar-benar fresh dari database, bukan dari cache.
     // =======================================================
     res.setHeader('Cache-Control', 'no-store, max-age=0, s-maxage=0');
     // =======================================================
@@ -13,7 +11,6 @@ export default async function handler(req, res) {
     try {
         if (type === 'settings') {
             const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/settings?id=eq.1`, {
-                // [PERBAIKAN] Menggunakan SERVICE_KEY agar bisa tembus RLS Supabase
                 headers: { 'apikey': process.env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}` }
             });
             const data = await response.json();
@@ -21,26 +18,37 @@ export default async function handler(req, res) {
         } 
         
         if (type === 'stats') {
+            // =======================================================
+            // [FITUR BARU] AUTO-CANCEL TRANSAKSI PENDING (> 15 MENIT)
+            // Berjalan di background tanpa memperlambat response frontend
+            // =======================================================
+            const fifteenMinsAgo = new Date(Date.now() - 15 * 60000).toISOString();
+            fetch(`${process.env.SUPABASE_URL}/rest/v1/donations?status=eq.PENDING&created_at=lt.${fifteenMinsAgo}`, {
+                method: 'PATCH',
+                headers: { 
+                    'apikey': process.env.SUPABASE_SERVICE_KEY, 
+                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`, 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ status: 'FAILED' })
+            }).catch(err => console.log('Auto-Cancel Error:', err));
+            // =======================================================
+
             const settingsRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/settings?id=eq.1`, {
-                // [PERBAIKAN] Menggunakan SERVICE_KEY
                 headers: { 'apikey': process.env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}` }
             });
             const settingsData = await settingsRes.json();
 
-            // Ambil semua donasi yang statusnya SETTLED
             const donationsRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/donations?status=eq.SETTLED&select=amount`, {
-                // [PERBAIKAN] Menggunakan SERVICE_KEY
                 headers: { 'apikey': process.env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}` }
             });
             const donationsData = await donationsRes.json();
 
-            // [PENGAMAN] Cek apakah data yang dikembalikan berbentuk Array, jika tidak maka 0
             let total_raised = 0;
             if (Array.isArray(donationsData)) {
                 total_raised = donationsData.reduce((sum, d) => sum + Number(d.amount || 0), 0);
             }
 
-            // [PENGAMAN] Jika target di database 0 atau kosong, set default 10 juta
             let target_amount = settingsData[0]?.target_amount || 10000000;
             if (target_amount == 0) target_amount = 10000000;
 
