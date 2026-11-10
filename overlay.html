@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation Alert</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* =========================================
+           BASE SETUP (TRANSPARAN UNTUK OBS/TIKTOK)
+           ========================================= */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: transparent; 
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 60px;
+            pointer-events: none;
+            /* Anti-aliasing untuk teks yang lebih tajam */
+            -webkit-font-smoothing: antialiased; 
+        }
+
+        /* =========================================
+           CONTAINER DESIGN (CLEAN & SOLID)
+           ========================================= */
+        #alert-container {
+            display: none;
+            width: 90%;
+            max-width: 460px;
+            background: #0a0a0a; /* Warna hitam solid, bukan kaca */
+            border: 1px solid #27272a; /* Garis tepi tipis elegan */
+            border-radius: 12px; /* Sudut tegas, tidak terlalu bulat */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Shadow sangat halus */
+            overflow: hidden;
+            position: relative;
+            /* Animasi Smooth */
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        /* State saat aktif */
+        #alert-container.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* =========================================
+           TYPOGRAPHY & LAYOUT
+           ========================================= */
+        .alert-content {
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #71717a; /* Zinc-500 */
+        }
+
+        .alert-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .donor-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .donor-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #fafafa; /* Zinc-50 */
+            margin: 0;
+        }
+
+        .donor-amount {
+            font-size: 24px;
+            font-weight: 700;
+            color: #10b981; /* Emerald-500 (Hijau bersih) */
+            margin: 0;
+            letter-spacing: -0.5px; /* Sedikit rapat agar modern */
+        }
+
+        .donor-message {
+            font-size: 13px;
+            color: #a1a1aa; /* Zinc-400 */
+            line-height: 1.5;
+            margin: 0;
+            font-style: italic;
+            border-left: 2px solid #27272a;
+            padding-left: 10px;
+        }
+
+        /* =========================================
+           PROGRESS BAR (TIPIS & ELEGAN)
+           ========================================= */
+        #progress-bar-container {
+            width: 100%;
+            height: 2px;
+            background: #18181b; /* Latar belakang progress bar */
+            position: absolute;
+            bottom: 0;
+            left: 0;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: #10b981;
+            width: 100%;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); /* Glow tipis di ujung bar */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="alert-container">
+        <div class="alert-content">
+            
+            <div class="alert-header">
+                <span>New Donation</span>
+                <span id="donor-method">QRIS</span>
+            </div>
+
+            <div class="alert-main">
+                <div class="donor-info">
+                    <p class="donor-name" id="donor-name">Budi Santoso</p>
+                    <p class="donor-amount" id="donor-amount">Rp 50.000</p>
+                </div>
+            </div>
+
+            <!-- Area Pesan (Akan disembunyikan jika tidak ada pesan) -->
+            <div id="message-container">
+                <p class="donor-message" id="donor-message">"Semangat terus bang Zyxellvar!"</p>
+            </div>
+
+        </div>
+
+        <!-- Progress Bar 20 Detik -->
+        <div id="progress-bar-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        const POLL_INTERVAL = 3000; 
+        const DISPLAY_DURATION = 20000; 
+
+        let seenDonationIds = new Set();
+        let donationQueue = [];
+        let isShowing = false;
+        let isFirstLoad = true;
+
+        const alertContainer = document.getElementById('alert-container');
+        const progressBar = document.getElementById('progress-bar');
+        const donorName = document.getElementById('donor-name');
+        const donorAmount = document.getElementById('donor-amount');
+        const donorMethod = document.getElementById('donor-method');
+        const donorMessage = document.getElementById('donor-message');
+        const messageContainer = document.getElementById('message-container');
+
+        async function fetchLatestDonations() {
+            try {
+                const res = await fetch('/api/latest-donation');
+                if (!res.ok) return;
+                const data = await res.json();
+
+                if (!Array.isArray(data)) return;
+
+                const newDonations = data.filter(d => !seenDonationIds.has(d.order_id));
+
+                if (isFirstLoad) {
+                    data.forEach(d => seenDonationIds.add(d.order_id));
+                    isFirstLoad = false;
+                    return;
+                }
+
+                if (newDonations.length > 0) {
+                    newDonations.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); 
+                    
+                    newDonations.forEach(d => {
+                        seenDonationIds.add(d.order_id);
+                        donationQueue.push(d);
+                    });
+
+                    processQueue();
+                }
+            } catch (err) {
+                console.error('Polling error:', err);
+            }
+        }
+
+        function processQueue() {
+            if (isShowing || donationQueue.length === 0) return;
+            const donation = donationQueue.shift();
+            showAlert(donation);
+        }
+
+        function showAlert(donation) {
+            isShowing = true;
+
+            // Set Data
+            donorName.innerText = donation.donor_name || 'Anonim';
+            donorAmount.innerText = 'Rp ' + donation.amount.toLocaleString('id-ID');
+            donorMethod.innerText = donation.payment_method || 'QRIS';
+
+            if (donation.message && donation.message.trim() !== '') {
+                donorMessage.innerText = `"${donation.message}"`;
+                messageContainer.style.display = 'block';
+            } else {
+                messageContainer.style.display = 'none';
+            }
+
+            // Tampilkan Container dengan Animasi CSS
+            alertContainer.style.display = 'block';
+            // Sedikit delay agar transisi CSS berjalan
+            setTimeout(() => {
+                alertContainer.classList.add('show');
+            }, 10);
+
+            // Jalankan Progress Bar
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '100%';
+            void progressBar.offsetWidth; 
+            progressBar.style.transition = `width ${DISPLAY_DURATION}ms linear`;
+            progressBar.style.width = '0%';
+
+            // Timer Selesai
+            setTimeout(() => {
+                // Sembunyikan dengan Animasi
+                alertContainer.classList.remove('show');
+                
+                // Hapus dari DOM setelah transisi selesai
+                setTimeout(() => {
+                    alertContainer.style.display = 'none';
+                    isShowing = false;
+                    processQueue(); // Lanjut antrean berikutnya
+                }, 400); // 400ms sesuai durasi transition opacity
+            }, DISPLAY_DURATION);
+        }
+
+        // Mulai Polling
+        fetchLatestDonations();
+        setInterval(fetchLatestDonations, POLL_INTERVAL);
+    </script>
+</body>
+</html>
