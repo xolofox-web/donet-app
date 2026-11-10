@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dukung-kreator-v20'; // <--- DIUBAH DARI v1 MENJADI v2
+const CACHE_NAME = 'dukung-kreator-v21'; // <--- DIUBAH DARI v1 MENJADI v2
 const urlsToCache = [
   '/',
   '/index.html',
